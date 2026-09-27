@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四年級數學學力檢測 - 互動式試題分析儀表板</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .drag-handle { cursor: move; }
+        .ghost-card { opacity: 0.3; background: #1e1b4b; border: 2px dashed #6366f1; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen pb-16">
+
+    <!-- 頂部導航欄 -->
+    <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20 text-white">
+                    <i data-lucide="line-chart" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">115學年度四年級數學學力檢測</h1>
+                    <p class="text-xs text-slate-400">系統化試題診斷、錯誤誘答力分析與教學決策儀表板</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs bg-slate-800 text-slate-300 px-3.5 py-1.5 rounded-full border border-slate-700 flex items-center gap-1.5 shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    卡片支援自由拖曳排版 (SortableJS)
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 mt-8">
+        
+        <!-- 可拖拽卡片區域 -->
+        <div id="drag-container" class="space-y-8">
+            
+            <!-- 貼文框 1：描述性統計指標卡 -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl transition-all hover:border-slate-700/50" data-id="card-stats">
+                <div class="drag-handle flex justify-between items-center border-b border-slate-800 pb-4 mb-6 select-none">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="text-indigo-400 w-5 h-5"></i>
+                        <h2 class="text-base font-bold text-slate-100">一、整體描述性統計指標摘要</h2>
+                    </div>
+                    <span class="text-slate-500 text-xs flex items-center gap-1">
+                        <i data-lucide="grip-vertical" class="w-4 h-4"></i> 拖曳此處
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-xs text-slate-400 mb-1">有效試題數</div>
+                        <div class="text-2xl font-black text-indigo-400">24 <span class="text-xs font-normal text-slate-500">題</span></div>
+                        <p class="text-[10px] text-slate-500 mt-1">排除缺漏之第17題</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-xs text-slate-400 mb-1">平均通過率</div>
+                        <div id="desc-mean" class="text-2xl font-black text-emerald-400">--</div>
+                        <p class="text-[10px] text-slate-500 mt-1">全體學生答對均值</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-xs text-slate-400 mb-1">通過率中位數</div>
+                        <div id="desc-median" class="text-2xl font-black text-amber-400">--</div>
+                        <p class="text-[10px] text-slate-500 mt-1">排序居中之指標</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-xs text-slate-400 mb-1">最易試題 (Q1)</div>
+                        <div id="desc-max" class="text-2xl font-black text-cyan-400">--</div>
+                        <p id="desc-max-label" class="text-[10px] text-slate-500 mt-1">最高通過率項目</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-xs text-slate-400 mb-1">最難試題 (Q25)</div>
+                        <div id="desc-min" class="text-2xl font-black text-rose-400">--</div>
+                        <p id="desc-min-label" class="text-[10px] text-slate-500 mt-1">最低通過率項目</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-xs text-slate-400 mb-1">通過率標準差</div>
+                        <div id="desc-sd" class="text-2xl font-black text-purple-400">--</div>
+                        <p class="text-[10px] text-slate-500 mt-1">試題難度離散度</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 貼文框 2：大盤指標對比趨勢圖 -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl" data-id="card-trend">
+                <div class="drag-handle flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-800 pb-4 mb-6 select-none">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="activity" class="text-purple-400 w-5 h-5"></i>
+                        <h2 class="text-base font-bold text-slate-100">二、試題指標綜合對比分佈趨勢</h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label for="metric-select" class="text-xs text-slate-400 whitespace-nowrap">切換檢視指標：</label>
+                        <select id="metric-select" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold">
+                            <option value="passRate">通過率 (%)</option>
+                            <option value="diff">難度指標 (P-Value)</option>
+                            <option value="disc">鑑別度 (D-Index)</option>
+                        </select>
+                        <span class="text-slate-500 text-xs hidden sm:flex items-center gap-1">
+                            <i data-lucide="grip-vertical" class="w-4 h-4"></i> 拖曳此處
+                        </span>
+                    </div>
+                </div>
+                <div class="relative w-full h-[320px]">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 貼文框 3：10分組距人數分佈 -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl" data-id="card-intervals">
+                <div class="drag-handle flex justify-between items-center border-b border-slate-800 pb-4 mb-6 select-none">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="text-pink-400 w-5 h-5"></i>
+                        <h2 class="text-base font-bold text-slate-100">三、試題通過率之 10% 組距分佈圖表</h2>
+                    </div>
+                    <span class="text-slate-500 text-xs flex items-center gap-1">
+                        <i data-lucide="grip-vertical" class="w-4 h-4"></i> 拖曳此處
+                    </span>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div class="lg:col-span-5 relative h-[280px]">
+                        <canvas id="intervalChart"></canvas>
+                    </div>
+                    <div class="lg:col-span-7 overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 font-semibold bg-slate-900/50">
+                                    <th class="p-3">通過率區間</th>
+                                    <th class="p-3 text-center">題目數</th>
+                                    <th class="p-3">包含題號</th>
+                                    <th class="p-3 text-right">區間平均答對數</th>
+                                </tr>
+                            </thead>
+                            <tbody id="interval-table-body" class="divide-y divide-slate-800 text-slate-300">
+                                <!-- JS 動態填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 貼文框 4：單題深度診斷與學情分析 -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl border-l-4 border-l-indigo-500" data-id="card-diagnostic">
+                <div class="drag-handle flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-800 pb-4 mb-6 select-none">
+                    <div class="flex flex-col">
+                        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="target" class="text-rose-400 w-5 h-5"></i>
+                            四、單題學科概念深度診斷系統
+                        </h2>
+                        <span class="text-xs text-slate-400 mt-1">選取下方或大表中的題號，右側即時同步題本、PHL誘答圖、錯誤主因與教學對策</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label for="item-select" class="text-xs font-bold text-indigo-400 whitespace-nowrap">選擇診斷題號：</label>
+                        <select id="item-select" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold">
+                            <!-- 動態填充 -->
+                        </select>
+                        <span class="text-slate-500 text-xs hidden sm:flex items-center gap-1">
+                            <i data-lucide="grip-vertical" class="w-4 h-4"></i> 拖曳此處
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- 左側：題目題幹與對應分析 -->
+                    <div class="lg:col-span-7 space-y-5">
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
+                            <div class="absolute right-0 top-0 bg-indigo-600 text-white text-[10px] font-black tracking-widest px-3 py-1 uppercase rounded-bl-xl shadow-md" id="diag-ans-badge">
+                                正確答案：選項 1
+                            </div>
+                            <h3 id="diag-title" class="text-sm font-bold text-indigo-300 mb-3">第 1 題</h3>
+                            <div id="diag-stem" class="text-sm text-slate-200 leading-relaxed font-medium bg-slate-950 border border-slate-800/80 rounded-lg p-4 shadow-inner whitespace-pre-line">
+                                載入中...
+                            </div>
+                        </div>
+
+                        <!-- 基礎指標卡 -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="bg-slate-900 border border-slate-800/60 p-3.5 rounded-xl text-center">
+                                <div class="text-[10px] text-slate-400 font-semibold mb-0.5">答對人數</div>
+                                <div id="diag-correct" class="text-lg font-black text-emerald-400">--</div>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800/60 p-3.5 rounded-xl text-center">
+                                <div class="text-[10px] text-slate-400 font-semibold mb-0.5">答錯人數</div>
+                                <div id="diag-incorrect" class="text-lg font-black text-rose-400">--</div>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800/60 p-3.5 rounded-xl text-center">
+                                <div class="text-[10px] text-slate-400 font-semibold mb-0.5">難度係數 (P)</div>
+                                <div id="diag-p" class="text-lg font-black text-amber-400">--</div>
+                            </div>
+                            <div class="bg-slate-900 border border-slate-800/60 p-3.5 rounded-xl text-center">
+                                <div class="text-[10px] text-slate-400 font-semibold mb-0.5">鑑別度 (D)</div>
+                                <div id="diag-d" class="text-lg font-black text-cyan-400">--</div>
+                            </div>
+                        </div>
+
+                        <!-- 錯題主因與教學對策一體化區 -->
+                        <div class="space-y-4 pt-2">
+                            <div class="bg-amber-950/40 border border-amber-900/60 rounded-xl p-5">
+                                <h4 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 mb-2">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                    學情診斷：錯題主因分析
+                                </h4>
+                                <p id="diag-reason" class="text-xs text-amber-200/90 leading-relaxed">載入中...</p>
+                            </div>
+                            <div class="bg-emerald-950/40 border border-emerald-900/60 rounded-xl p-5">
+                                <h4 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mb-2">
+                                    <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                                    學術定位：核心教學重點
+                                </h4>
+                                <p id="diag-focus" class="text-xs text-emerald-200/90 leading-relaxed">載入中...</p>
+                            </div>
+                            <div class="bg-sky-950/40 border border-sky-900/60 rounded-xl p-5">
+                                <h4 class="text-xs font-bold text-sky-400 flex items-center gap-1.5 mb-2">
+                                    <i data-lucide="navigation" class="w-4 h-4"></i>
+                                    現場落實：具體教學建議
+                                </h4>
+                                <p id="diag-suggest" class="text-xs text-sky-200/90 leading-relaxed">載入中...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右側：選項誘答力 PHL 分析圖 -->
+                    <div class="lg:col-span-5 flex flex-col justify-between">
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 h-full flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-300 flex items-center gap-2 mb-4">
+                                    <i data-lucide="users" class="text-indigo-400 w-4.5 h-4.5"></i>
+                                    分組選項誘答力對比 (全體 P / 高分組 H / 低分組 L)
+                                </h3>
+                                <div class="relative w-full h-[320px]">
+                                    <canvas id="phlChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="mt-4 border-t border-slate-800 pt-4">
+                                <p class="text-[10px] text-slate-500 leading-relaxed">
+                                    * 備註：長條圖中的 <span class="text-slate-300 font-bold">P (全體)</span>、<span class="text-indigo-400 font-bold">H (高分群前27%)</span> 與 <span class="text-rose-400 font-bold">L (低分群後27%)</span> 表示各群學生在四個選項的選取率。當錯誤選項的 L 值偏高時，代表其極具誘答性；若 H 組選取了錯誤選項，則提示高分群可能存在特定的幾何或運算思維陷阱。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 貼文框 5：原始數據表格總覽 -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl" data-id="card-table">
+                <div class="drag-handle flex justify-between items-center border-b border-slate-800 pb-4 mb-6 select-none">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="table" class="text-indigo-400 w-5 h-5"></i>
+                        <h2 class="text-base font-bold text-slate-100">五、檢測原始數據矩陣表格總覽</h2>
+                    </div>
+                    <span class="text-slate-500 text-xs flex items-center gap-1">
+                        <i data-lucide="grip-vertical" class="w-4 h-4"></i> 拖曳此處
+                    </span>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-[380px] overflow-y-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-900 text-slate-300 sticky top-0 shadow-md font-semibold z-20">
+                            <tr>
+                                <th class="p-3.5 text-center">題號</th>
+                                <th class="p-3.5 text-center">正確答案</th>
+                                <th class="p-3.5 text-right">答對人數</th>
+                                <th class="p-3.5 text-right">答錯人數</th>
+                                <th class="p-3.5 text-right">通過率 (%)</th>
+                                <th class="p-3.5 text-right">難度 (P)</th>
+                                <th class="p-3.5 text-right">鑑別度 (D)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body" class="divide-y divide-slate-800 text-slate-300 bg-slate-950">
+                            <!-- JS 動態加載 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // 本地整合數據 (排除第17題)
+        const examData = [
+            { id: 1, ans: 2, correct: 3910, incorrect: 472, passRate: 89.22, diff: 0.8567, disc: 0.2426, stem: "1. 甲 = 12.08、乙 = 13、丙 = 12.15、丁 = 12.2。\n請問哪個數最大？哪個數最小？\n\n① 甲最大，丁最小\n② 乙最大，甲最小\n③ 乙最大，丙最小\n④ 丙最大，乙最小", phl: [[0.0417, 0.0092, 0.1081], [0.8922, 0.9780, 0.7354], [0.0419, 0.0126, 0.0921], [0.0235, 0.0000, 0.0625]], reason: "多數學生已基本掌握小數的大小關係。部分錯誤的低分群學生常誤將『位數長短』當作數值大小的判讀直覺，如誤認 12.08 大於 12.2。", focus: "多位小數的位值系統，以及位數不同時的大小比較策略。", suggest: "教學中引導學生利用『補零對齊法』，將 12.2 改記為 12.20 後再行位值比對。" },
+            { id: 2, ans: 3, correct: 3824, incorrect: 558, passRate: 87.26, diff: 0.8533, disc: 0.2206, stem: "2. 下面是小敏學校這個星期的「營養午餐菜單」。\n小敏最喜歡吃「炸物」（炸豬排、炸雞塊等），最討厭吃「青椒」。\n請問哪天的午餐同時有她最喜歡和最討厭的東西？\n\n① 星期二\n② 星期三\n③ 星期四\n④ 星期五", phl: [[0.0390, 0.0076, 0.0853], [0.0228, 0.0033, 0.0574], [0.8726, 0.9636, 0.7430], [0.0650, 0.0253, 0.1124]], reason: "此題屬於跨維度生活資訊圖表檢索題。答錯之低分組學生主要原因為多個篩選條件在交叉比對時發生粗心遺漏或文字對齊失誤。", focus: "生活數據圖表的多重條件交集篩選與資訊提取能力。", suggest: "引導學生在圖表上使用『雙色標記法』，分別將含有『炸物』與『青椒』的格位圈起，觀察哪一天出現雙色重合，可大幅降低認知負荷。" },
+            { id: 3, ans: 4, correct: 3171, incorrect: 1211, passRate: 72.36, diff: 0.6859, disc: 0.4894, stem: "3. 已經知道 86 × 700 = 60200。\n下列哪個算式的答案和 86 × 699 的積一樣大？\n\n① 60200 + 700\n② 60200 - 700\n③ 60200 + 86\n④ 60200 - 86", phl: [[0.0547, 0.0050, 0.1487], [0.1535, 0.0574, 0.2603], [0.0657, 0.0067, 0.1445], [0.7236, 0.9306, 0.4412]], reason: "低分組大量學生選取選項② (60200 - 700)，表明其直覺地把乘數減少 1 的變化與減去『700』綁定，混淆了被乘數與乘數的累積意義。", focus: "乘法的累加意涵、乘法分配律的前置奠基。", suggest: "利用生活實體（如：700盒各裝86顆的糖果，拿走1盒）引導，理解少一組是少了一個『被乘數(86)』而非『乘數(700)』。" },
+            { id: 4, ans: 1, correct: 3663, incorrect: 719, passRate: 83.59, diff: 0.7831, disc: 0.3863, stem: "4. 小晴想烤蛋糕。步驟一攪拌需 30 分鐘，步驟二烘烤需 15 分鐘。為了讓蛋糕能在下午 4 時 50 分開始的派對剛好出爐，小晴最晚要在下午幾時幾分開始？\n\n① 下午 4 時 5 分\n② 下午 4 時 15 分\n③ 下午 4 時 25 分\n④ 下午 4 時 30 分", phl: [[0.8359, 0.9763, 0.5900], [0.0734, 0.0169, 0.1597], [0.0362, 0.0016, 0.1065], [0.0534, 0.0050, 0.1403]], reason: "此題為時間長度加法與時間點逆推的雙重應用。少數低分組學生於 4時50分 向前倒推 45 分鐘時，容易在位值或減法計算上產生失誤。", focus: "時間量加成計算與時點逆推倒算技能。", suggest: "使用『時間線段圖』工具，帶領學生在地圖上向左（前進）跨步，先扣除30分鐘到4:20，再扣除15分鐘到4:05，視覺化逆推流程。" },
+            { id: 5, ans: 1, correct: 3274, incorrect: 1108, passRate: 74.71, diff: 0.7193, disc: 0.4006, stem: "5. 題目提供一條完整土司示意圖。\n請問下圖中塗色部分是多少條土司？（等分成 8 份，圖示為兩條土司，一條塗滿，另一條塗了 3 份）\n\n① 11/8 條\n② 1又1/11 條\n③ 5/8 條\n④ 3/11 條", phl: [[0.7471, 0.9196, 0.5190], [0.0575, 0.0109, 0.1318], [0.0175, 0.0016, 0.0557], [0.1764, 0.0676, 0.2907]], reason: "選項④ (3/11) 吸收了低分組高達 29.07% 的選取率。這群學生誤將視野中看到的『全部格數（11格）』當成分母，缺乏『單位1是單條吐司（等分8份）』的定錨。", focus: "分數的單位量本質，認識分母代表一個單位的等分數，而非總格子數。", suggest: "加強『單位1』之界定。可利用披薩教具展示：不論共有幾個披薩，只要每個披薩切8片，每片就是 1/8 個，拿走 11 片即是 11/8 個。" },
+            { id: 6, ans: 2, correct: 2969, incorrect: 1413, passRate: 67.75, diff: 0.6360, disc: 0.5638, stem: "6. 火車依序經過永康、大橋、臺南、保安。\n大橋站指示牌：永康在大橋北邊 3.7 公里，臺南在大橋南邊 2.7 公里。\n臺南站指示牌：保安在臺南南邊 7.6 公里。\n請問永康站和保安站的距離是多少公里？\n\n① 11.3\n② 14.0\n③ 17.7\n④ 28.0", phl: [[0.1259, 0.0295, 0.2485], [0.6775, 0.9180, 0.3541], [0.1191, 0.0312, 0.2265], [0.0741, 0.0194, 0.1648]], reason: "此題要求學生從不同站點看板中拼湊完整的距離段落。低分組在『永康-大橋-臺南-保安』相對位置線段化上存在嚴重障礙，容易漏算或誤加。", focus: "空間相對位置的數線轉譯與長度多步加法計算。", suggest: "要求學生動手畫出由北往南的線段圖，將 3.7、2.7、7.6 公里分別標示在區間上，確認總長度即為 3.7 + 2.7 + 7.6 = 14.0 公里。" },
+            { id: 7, ans: 1, correct: 2410, incorrect: 1972, passRate: 54.99, diff: 0.5524, disc: 0.6618, stem: "7. 單點一個漢堡 75 元、一杯奶茶 35 元，總共 110 元。\n若點套餐（漢堡+奶茶）只需 100 元。\n請問賣出「120 個漢堡和 120 杯奶茶合起來」的收入，比賣出「120 份套餐」多了多少元？\n\n① (110 - 100) × 120\n② (110 + 100) × 120\n③ (75 - 35) × 120\n④ (75 + 35) × 120", phl: [[0.5499, 0.8833, 0.2214], [0.1348, 0.0228, 0.2747], [0.0433, 0.0042, 0.1056], [0.2690, 0.0887, 0.3947]], reason: "此題鑑別度高達 0.6618。選項④ 在低分組高達 39.47% 選取率，學生看見『多多少元』卻因被單價（75、35）數字干擾，直接選擇相加，未理解單價差額的併式結構。", focus: "四則運算兩步驟應用問題，能靈活運用括號表示運算順序與價差概念。", suggest: "實施『情境化採購模擬』。引導學生思考：買 1 份套餐可以省下多少錢？(110-100)，那買 120 份就是將這省下的錢乘 120，即是少花的總額。" },
+            { id: 8, ans: 3, correct: 2304, incorrect: 2078, passRate: 52.57, diff: 0.5329, disc: 0.4404, stem: "8. 請問「402300 ÷ 500」的商及餘數分別是多少？\n\n① 商是 84，餘數是 300\n② 商是 804，餘數是 30\n③ 商是 804，餘數是 300\n④ 商是 840，餘數是 300", phl: [[0.2261, 0.1208, 0.3093], [0.0702, 0.0169, 0.1470], [0.5257, 0.7531, 0.3127], [0.1768, 0.1090, 0.2290]], reason: "直式除法中的兩大殺手：『商中間零被忽略』與『被除數、除數同消零後餘數未放大還原』。低分組在商 84 或 840 產生巨大分歧。", focus: "除法直式位值精確對齊、商中補零原理，以及餘數還原法則。", suggest: "引導學生在動筆前『先估商』：40 萬除以 500 約是 800，藉此自行淘汰 84 與 840 的直覺答案；除數同消零後，強調餘數要『乘以當初消掉的 100』。" },
+            { id: 9, ans: 2, correct: 2735, incorrect: 1647, passRate: 62.41, diff: 0.6086, disc: 0.5426, stem: "9. 老師用 5 個相同的正方形圖卡排出了圖形甲、圖形乙、圖形丙。\n請問哪個圖形的周長最短？\n\n① 圖形甲\n② 圖形乙\n③ 圖形丙\n④ 一樣短", phl: [[0.0488, 0.0211, 0.0786], [0.6241, 0.8799, 0.3372], [0.0271, 0.0084, 0.0574], [0.2975, 0.0896, 0.5232]], reason: "高達 52.32% 的低分組同學選取④ (一樣短)。這說明低分組普遍存在『面積相等，周長即相等』的嚴重的幾何直覺謬誤。", focus: "周長與面積的獨立本質，內部邊緣重合對周長的消減原理。", suggest: "實施『手指沿邊走一圈』計數，或提供實體方格卡讓學生親自數外露邊數（圖形乙中間重合多，外露邊只有10條，其他是12條），用實證打破直覺謬誤。" },
+            { id: 10, ans: 1, correct: 2413, incorrect: 1969, passRate: 55.06, diff: 0.5646, disc: 0.5308, stem: "10. 一盒牛奶糖有 12 顆。\n姐姐有 15/6 盒、妹妹有 1又5/6 盒、哥哥有 1 盒又 5 顆、弟弟有 15 顆。\n請問誰的牛奶糖最多？\n\n① 姐姐\n② 妹妹\n③ 哥哥\n④ 弟弟", phl: [[0.5506, 0.8300, 0.2992], [0.1058, 0.0625, 0.1606], [0.2165, 0.0726, 0.3220], [0.1239, 0.0346, 0.2138]], reason: "本題需在『假分數、帶分數、個數、混合計量』間轉換。低分組在將『1盒又5顆』轉為分數或顆數時出現困難，哥哥與弟弟的選項吸納了超過50%的錯題率。", focus: "分數在生活量中的複合應用、多重計量體系的互化比較。", suggest: "建議將所有人的單位統一化為『最基礎的計數單位（顆數）』。如姐姐 15/6 盒 = 30 顆；妹妹 1又5/6 盒 = 22 顆，使比較直觀化。" },
+            { id: 11, ans: 3, correct: 3334, incorrect: 1048, passRate: 76.08, diff: 0.7168, disc: 0.5054, stem: "11. 第一種三角板三個角為 30、60、90度；第二種三角板為 45、45、90度。\n下圖是由兩個三角板拼成的圖形，相鄰拼成角 A。\n請問角 A 的角度是多少度？\n\n① 75\n② 90\n③ 105\n④ 120", phl: [[0.0974, 0.0143, 0.2138], [0.0807, 0.0050, 0.1927], [0.7608, 0.9695, 0.4640], [0.0593, 0.0109, 0.1251]], reason: "雖然通過率較佳，但仍有低分組同學對三角板幾何夾角的特徵記錯，無法正確識別出角 A 是由 60 度與 45 度拼合而成。", focus: "特殊三角板角特徵的熟練記憶與拼合角度加法。", suggest: "在三角板教具上直接用麥克筆寫上角度，並請學生用量角器親自測量拼合後的 105 度，建立身體感官認知。" },
+            { id: 12, ans: 2, correct: 2272, incorrect: 2110, passRate: 51.84, diff: 0.5211, disc: 0.5519, stem: "12. 箭頭指向南方。\n甲說：順時針旋轉 1又3/4 圈。\n乙說：逆時針旋轉 3/4 圈。\n丙說：順時針旋轉 90 度。\n丁說：逆時針旋轉 90 度。\n請問哪兩個人說法正確可以讓箭頭旋轉至東方？\n\n① 甲和丙\n② 甲和丁\n③ 乙和丙\n④ 乙和丁", phl: [[0.1275, 0.0591, 0.2155], [0.5184, 0.7971, 0.2451], [0.1412, 0.0473, 0.2620], [0.2115, 0.0963, 0.2730]], reason: "通過率僅半數。空間旋轉疊加分數、度數單位。低分組在『逆時針 90 度（指東）』與『順時針 1又3/4 圈（指東）』的物理指向轉換上感到極大挫折。", focus: "空間方位系統（東南西北）、旋轉方向與圈數/角度的對應。", suggest: "在教室地上貼『東南西北十字貼紙』，讓學生站在圓心扮演指針，實際依指令旋轉身體，從動覺體驗方位角之等價關係。" },
+            { id: 13, ans: 1, correct: 1998, incorrect: 2384, passRate: 45.59, diff: 0.4623, disc: 0.4801, stem: "13. 小明在紙上畫出三條直線 L1、L2、L3。\n其中 L1 與直線 L2 互相垂直，L3 也與直線 L2 互相垂直。\n甲說：L1 和 L3 之間距離處處相等。\n乙說：L1 與 L3 互相垂直。\n請問哪些人的說法正確？\n\n① 只有甲正確\n② 只有乙正確\n③ 甲和乙都正確\n④ 甲和乙都不正確", phl: [[0.4559, 0.7024, 0.2223], [0.1515, 0.0566, 0.2366], [0.1725, 0.0667, 0.2941], [0.2174, 0.1732, 0.2417]], reason: "通過率低於半數。學生幾何抽象想像力不足，在缺乏實物或圖像輔助下，無法將『雙垂直』聯想為『兩線平行』，誤將垂直與平行之性質混淆。", focus: "平面上平行線的判定（兩線皆垂直於同一直線，則該兩線平行）、平行線間距離處處相等的幾何定義。", suggest: "用兩把長尺（L1, L3）同時抵住黑板邊緣（L2），引導學生觀察這兩把長尺在空中的平行姿態，強化空間具體實證。" },
+            { id: 14, ans: 4, correct: 2149, incorrect: 2233, passRate: 49.04, diff: 0.5135, disc: 0.5672, stem: "14. 將一張長方形圖畫紙，用刀片沿著一條直線切割，分割為兩張紙。\n請問這兩張紙不可能是什麼圖形的組合？\n\n① 兩個直角三角形\n② 兩個梯形\n③ 一個梯形和一個直角三角形\n④ 一個正方形和一個直角三角形", phl: [[0.0848, 0.0177, 0.1766], [0.2932, 0.1437, 0.3829], [0.1284, 0.0405, 0.2054], [0.4904, 0.7971, 0.2299]], reason: "此題考察幾何分割的動態想像。選項② (兩個梯形) 吸引了 38.29% 的低分組學生，主因是其直覺地認為一刀不可能剪出兩個梯形；而對於正確選項④卻缺乏逆向幾何推演能力。", focus: "多邊形的邊角組合特徵、平面幾何切割思維。", suggest: "分發長方形廢紙，讓學生在堂上進行『實地切割工作坊』。親自動手切割出兩個梯形，或思考為何切出正方形時另一塊不可能僅是直角三角形，化抽象為具體。" },
+            { id: 15, ans: 3, correct: 2485, incorrect: 1897, passRate: 56.70, diff: 0.5672, disc: 0.5477, stem: "15. 姊姊 1~6 月收支紀錄折線圖（包含收入與支出雙折線）。\n請問下列敘述何者正確？\n\n① 每個月都是收入比支出多\n② 4 月份的收入有 5 萬元，是這半年來收入最多的月份\n③ 5 月份的收入和支出相差最多\n④ 3 月到 4 月的收入變化最大", phl: [[0.0456, 0.0067, 0.1056], [0.1802, 0.0743, 0.2713], [0.5670, 0.8410, 0.2933], [0.2049, 0.0769, 0.3271]], reason: "低分組常被選項④（3-4月收入變化大）或②（4月收入最大）干擾。原因在於眼球容易被『最陡峭的斜率』或『單一曲線頂點』吸引，而忽略了題目在探討『兩線間的垂直間距（差值）』。", focus: "雙折線統計圖的比較與垂直差值判讀。", suggest: "教學時使用『直尺垂直滑動法』，在每個月份拉出一條垂直線，引導學童視覺聚焦在收入點與支出點的『線段落差長度』，直觀找出最長差距為5月份。" },
+            { id: 16, ans: 4, correct: 2434, incorrect: 1948, passRate: 55.54, diff: 0.5600, disc: 0.5587, stem: "16. 三角形甲和三角形乙全等。\n三角形甲周長 76 公分，AB長 20 公分，BC長 30 公分。已知 BC 和 EF 一樣長。\n請問哪個敘述正確？\n\n① 點 A 的對應點是點 E\n② ∠F 的對應角是 ∠A\n③ DE 長 30 公分\n④ ED 和 FD 合起來是 46 公分", phl: [[0.2601, 0.1056, 0.3736], [0.0682, 0.0169, 0.1420], [0.1154, 0.0380, 0.2028], [0.5554, 0.8393, 0.2806]], reason: "高低分組在選項①出現歧異（低分組達 37.36% 選此）。低分組學生直覺地將擺放位置對稱的點當作對應點，缺乏旋轉全等幾何邊角對應的邏輯。", focus: "全等三角形之邊對應、角對應，以及利用周長守恆扣除邊長的算術思考。", suggest: "利用透明描圖紙畫出三角形甲，在黑板上手動旋轉與翻轉，去重合三角形乙，讓學生眼見為憑：哪些邊才是真正的對應邊。" },
+            { id: 18, ans: 4, correct: 2296, incorrect: 2086, passRate: 52.39, diff: 0.5333, disc: 0.5917, stem: "18. 三角形 ABC 的三個角分別是 40 度、40 度、100 度。\n甲說：是銳角三角形。\n乙說：是鈍角三角形。\n丙說：是等腰三角形。\n請問哪些人的說法正確？\n\n① 只有甲正確\n② 只有乙正確\n③ 只有甲、丙正確\n④ 只有乙、丙正確", phl: [[0.0826, 0.0109, 0.1741], [0.2222, 0.1022, 0.2958], [0.1670, 0.0566, 0.2848], [0.5239, 0.8292, 0.2375]], reason: "低中分組容易偏向選項② (29.58% L組選取)。其慣性思維認為『一個三角形在同一個維度下只能取一個名字』，判斷其是鈍角後，便直覺排斥它同時是等腰的可能性。", focus: "三角形依邊與依角的雙維度交集分類特徵（鈍角等腰三角形）。", suggest: "使用『韋恩圖（集合圈）』教學：一個圈代表等腰，另一個圈代表鈍角，引導學生發現此三角形同時落在兩個圈的交疊區，兩重性質是並存的。" },
+            { id: 19, ans: 2, correct: 1549, incorrect: 2833, passRate: 35.34, diff: 0.3841, disc: 0.4251, stem: "19. 已知「 ( ) + 36萬680 = 95萬400 」\n請問 ( ) 內要填入哪個數？\n\n① 58萬720\n② 58萬9720\n③ 131萬1080\n④ 132萬80", phl: [[0.5828, 0.3947, 0.6669], [0.3534, 0.5967, 0.1715], [0.0326, 0.0059, 0.0811], [0.0271, 0.0008, 0.0710]], reason: "此題為全卷答對率最低題。低分群高達 66.69% 決堤至選項①。主因是在處理『萬級、百級混合』的大數直式減法時，遇到 400 - 680 不夠減，向萬位借位時處理不當（甚至直接用 680 - 400 = 280 塞入百位）。", focus: "大數的混合四則計算與直式中多位跨位借位技巧。", suggest: "建立大數拆分習慣。例如將 95萬400 拆解為：94萬 + 100400，再減去 36萬與680，分別計算以降低跨位借位時的筆誤頻率。" },
+            { id: 20, ans: 4, correct: 2075, incorrect: 2307, passRate: 47.35, diff: 0.5071, disc: 0.6339, stem: "20. 甲農地面積是 24 平方公尺；\n乙農地是長 500 公分、寬 400 公分的長方形；\n丙農地是邊長 5 公尺的正方形。\n下列關於農地面積大小排序何者正確？\n\n① 甲 > 丙 > 乙\n② 乙 > 甲 > 丙\n③ 乙 = 丙 > 甲\n④ 丙 > 甲 > 乙", phl: [[0.2122, 0.0845, 0.3060], [0.1661, 0.0388, 0.2823], [0.1439, 0.0507, 0.2138], [0.4735, 0.8241, 0.1901]], reason: "高鑑別度題。低分群大批陷在單位轉換。部分人直覺 500 × 400 = 200000 平方公分，卻不知道怎麼跟 平方公尺 (24) 做比對，更有人認為 500公分即是 50公尺。", focus: "長度與面積單位之換算，理解『先化同長度單位、再算面積』之優勢策略。", suggest: "建立首要口訣：『算面積前，先對齊長度單位！』引導學生在看見乙地時，直接在題目上把 500公分、400公分劃掉寫成 5公尺、4公尺，面積即是 20平方公尺。" },
+            { id: 21, ans: 4, correct: 2411, incorrect: 1971, passRate: 55.02, diff: 0.5481, disc: 0.4928, stem: "21. 甲說：「384999」以四捨五入法取概數到萬位的結果是「39萬」。\n乙說：「380002」以無條件進入法取概數到萬位的結果是「38萬」。\n請問哪些人的說法正確？\n\n① 只有甲正確\n② 只有乙正確\n③ 甲和乙都正確\n④ 甲和乙都不正確", phl: [[0.1045, 0.0422, 0.1724], [0.2558, 0.1521, 0.3262], [0.0830, 0.0084, 0.1910], [0.5502, 0.7945, 0.3017]], reason: "概數估算邊界理解不清。低分組偏向乙說，主要是不理解無條件進入法的涵義：『即便只多 2，也要往前進一個萬位』，因而誤選了乙。", focus: "大數概數三種估值策略（四捨五入、無條件進入、無條件捨去）的邊界實施定義。", suggest: "使用數線定位法：將 380002 點在 38萬與39萬的中間。解釋『無條件進入』就是：指針只要動了一點點，就必須要向右大跨步至 39 萬。" },
+            { id: 22, ans: 1, correct: 1956, incorrect: 2426, passRate: 44.63, diff: 0.4742, disc: 0.5105, stem: "22. 動物社團共 75 位學生。\n貓：21人；鸚鵡：11人；兔子：13人(長條圖推估)；狗與孔雀魚數量被擦掉。\n請問下面敘述何者錯誤？\n\n① 飼養貓的人數最多\n② 飼養狗的人數最少\n③ 飼養兔子的人數有 13 人\n④ 飼養孔雀魚的人數有 23 人", phl: [[0.4463, 0.7295, 0.2189], [0.1239, 0.0726, 0.1665], [0.0739, 0.0236, 0.1251], [0.3493, 0.1707, 0.4818]], reason: "這是一題要求逆向推導的綜合統計題。低分群高度卡在選項④（48.18%），因為他們無法建立『總和扣除已知、再結合長條圖殘餘高度逼近答案』的多步思考鏈。", focus: "統計大數據多步逆向扣除運算，與長條圖刻度推算邏輯。", suggest: "寫下總量算式：75 - 21(貓) - 11(鸚鵡) - 13(兔) = 30(狗+孔雀魚)，再讓學生看長條圖狗與孔雀魚的高度落差。藉此引導孔雀魚是23人，狗是7人，突破思考瓶頸。" },
+            { id: 23, ans: 3, correct: 2466, incorrect: 1916, passRate: 56.27, diff: 0.5553, disc: 0.6475, stem: "23. 請問 140 個 0.1 公升合起來是多少公升？\n\n① 140\n② 14.1\n③ 14\n④ 1.4", phl: [[0.0554, 0.0152, 0.1031], [0.1264, 0.0262, 0.2603], [0.5627, 0.8791, 0.2316], [0.2482, 0.0777, 0.3922]], reason: "此題鑑別度高達 0.6475。低分組有 39.22% 選取了選項④ (1.4)。他們死背『看到小數點就移位』的公式，卻分不清向左移一位還是兩位，因而產生幾何級差的數量誤判。", focus: "小數十進位基數（10個0.1是1，100個0.1是10）的具體累計結構。", suggest: "帶領學童從基數思考：10個0.1公升合起來是一公升。那麼 140個 裡面包含了 14個 10，所以就是 14 公升。避開死記移動小數點的方法。" },
+            { id: 24, ans: 2, correct: 2012, incorrect: 2370, passRate: 45.91, diff: 0.4759, disc: 0.4530, stem: "24. 「 60 ÷ 3 × 4 = 甲，28 + 42 ÷ 14 = 乙，47 - 19 - 9 = 丙 」\n請問 甲 + 乙 + 丙 = ？\n\n① 148\n② 130\n③ 104\n④ 47", phl: [[0.1770, 0.1174, 0.2240], [0.4591, 0.7024, 0.2493], [0.2754, 0.1572, 0.3736], [0.0755, 0.0160, 0.1369]], reason: "學生在計算乙算式時犯了同級順序直覺謬誤：先算了 28 + 42 = 70，再用 70 ÷ 14 = 5，得到錯誤的乙值，完全破壞了『先乘除後加減』的守則。", focus: "三組中階混合四則運算的規則熟練度（先乘除、後加減；同級由左至右）。", suggest: "教學中強制學童在動筆算算式前，用彩色筆將『乘除法算式區塊（如 42÷14）』畫上底線，提醒自己這是一個不可拆分的心臟區塊，算完才能算加減。" },
+            { id: 25, ans: 3, correct: 1112, incorrect: 3270, passRate: 25.37, diff: 0.2755, disc: 0.2147, stem: "25. 下面是關於「4 平方公分」面積大小的說法。請問哪個說法正確？\n\n① 和 4 個「周長 1 公分的正方形」合起來一樣大\n② 和 4 個「面積 1 公分的正方形」合起來一樣大\n③ 和 4 個「邊長 1 公分的正方形」合起來一樣大\n④ 和 1 個「邊長 4 公分的正方形」合起來一樣大", phl: [[0.1522, 0.0896, 0.2240], [0.4527, 0.4564, 0.3795], [0.2537, 0.3829, 0.1682], [0.1284, 0.0608, 0.2113]], reason: "高鑑別度概念盲點。全體竟有高達 45.27% 學生瘋狂選取選項②。原因在於他們只用眼睛掃過『面積1』卻遺漏了『公分與平方公分』的單位名稱嚴格性。此為標準讀題不細心。", focus: "二維面積單位的严謹口語與書面表達，理解邊長為 1 公分之正方形其面積始為 1 平方公分。", suggest: "嚴厲糾正口語習慣。在堂上要求學生絕對不准將『平方公分』簡讀成『公分』；並在黑板畫出邊長 4 公分的大正方形（面積16），與 4 個邊長 1公分正方形比對，打破視覺文字陷阱。" }
+        ];
+
+        // 圖表實例
+        let trendChart = null;
+        let intervalChart = null;
+        let phlChart = null;
+
+        // 計算並填充描述性統計指標
+        function calculateDescriptiveStats() {
+            const passRates = examData.map(d => d.passRate).sort((a, b) => a - b);
+            const len = passRates.length;
+
+            // 均值
+            const mean = (passRates.reduce((acc, val) => acc + val, 0) / len).toFixed(2);
+            document.getElementById('desc-mean').innerText = `${mean} %`;
+
+            // 中位數
+            let median = 0;
+            const mid = Math.floor(len / 2);
+            if (len % 2 !== 0) {
+                median = passRates[mid];
+            } else {
+                median = ((passRates[mid - 1] + passRates[mid]) / 2);
+            }
+            document.getElementById('desc-median').innerText = `${median.toFixed(2)} %`;
+
+            // 最大值
+            const maxVal = passRates[len - 1];
+            const maxItem = examData.find(d => d.passRate === maxVal);
+            document.getElementById('desc-max').innerText = `${maxVal}%`;
+            document.getElementById('desc-max-label').innerText = `最易題：第 ${maxItem.id} 題`;
+
+            // 最小值
+            const minVal = passRates[0];
+            const minItem = examData.find(d => d.passRate === minVal);
+            document.getElementById('desc-min').innerText = `${minVal}%`;
+            document.getElementById('desc-min-label').innerText = `最難題：第 ${minItem.id} 題`;
+
+            // 標準差
+            const variance = passRates.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / len;
+            const sd = Math.sqrt(variance).toFixed(2);
+            document.getElementById('desc-sd').innerText = sd;
+        }
+
+        // 動態載入原始數據大表
+        function loadDataTable() {
+            const tbody = document.getElementById('data-table-body');
+            tbody.innerHTML = '';
+            examData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/50 cursor-pointer transition-colors duration-150 border-b border-slate-800";
+                tr.onclick = () => {
+                    document.getElementById('item-select').value = item.id;
+                    updateDiagnostic(item.id);
+                    document.getElementById('item-select').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                };
+                tr.innerHTML = `
+                    <td class="p-3.5 text-center font-black text-indigo-400">第 ${item.id} 題</td>
+                    <td class="p-3.5 text-center"><span class="bg-indigo-950 text-indigo-300 font-bold px-2.5 py-1 rounded-full border border-indigo-800/50">選項 ${item.ans}</span></td>
+                    <td class="p-3.5 text-right font-medium text-emerald-400">${item.correct.toLocaleString()}</td>
+                    <td class="p-3.5 text-right font-medium text-rose-400">${item.incorrect.toLocaleString()}</td>
+                    <td class="p-3.5 text-right font-black text-slate-100">${item.passRate}%</td>
+                    <td class="p-3.5 text-right font-mono text-slate-300">${item.diff}</td>
+                    <td class="p-3.5 text-right font-mono text-slate-300">${item.disc}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 大盤指標折線圖
+        function renderTrendChart(metric) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            const labels = examData.map(d => `題${d.id}`);
+            const dataValues = examData.map(d => d[metric]);
+
+            let labelName = '通過率 (%)';
+            let borderColor = '#6366f1';
+            let bgColor = 'rgba(99, 102, 241, 0.15)';
+            let hoverBg = '#818cf8';
+
+            if (metric === 'diff') {
+                labelName = '難度 (P-Value)';
+                borderColor = '#f59e0b';
+                bgColor = 'rgba(245, 158, 11, 0.15)';
+                hoverBg = '#fbbf24';
+            } else if (metric === 'disc') {
+                labelName = '鑑別度 (D-Index)';
+                borderColor = '#06b6d4';
+                bgColor = 'rgba(6, 182, 212, 0.15)';
+                hoverBg = '#22d3ee';
+            }
+
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: labelName,
+                        data: dataValues,
+                        borderColor: borderColor,
+                        backgroundColor: bgColor,
+                        borderWidth: 2.5,
+                        pointBackgroundColor: borderColor,
+                        pointHoverBackgroundColor: hoverBg,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'system-ui', weight: 'bold' } } },
+                        tooltip: { backgroundColor: '#0f172a', titleColor: '#f1f5f9', bodyColor: '#cbd5e1', borderColor: '#334155', borderWidth: 1 }
+                    },
+                    scales: {
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // 通過率 10% 組距直方圖與表格
+        function calculateAndRenderIntervals() {
+            const intervals = [
+                { label: '0-10%', count: 0, items: [], totalCorrect: 0 },
+                { label: '10-20%', count: 0, items: [], totalCorrect: 0 },
+                { label: '20-30%', count: 0, items: [], totalCorrect: 0 },
+                { label: '30-40%', count: 0, items: [], totalCorrect: 0 },
+                { label: '40-50%', count: 0, items: [], totalCorrect: 0 },
+                { label: '50-60%', count: 0, items: [], totalCorrect: 0 },
+                { label: '60-70%', count: 0, items: [], totalCorrect: 0 },
+                { label: '70-80%', count: 0, items: [], totalCorrect: 0 },
+                { label: '80-90%', count: 0, items: [], totalCorrect: 0 },
+                { label: '90-100%', count: 0, items: [], totalCorrect: 0 }
+            ];
+
+            examData.forEach(item => {
+                let idx = Math.floor(item.passRate / 10);
+                if (idx === 10) idx = 9;
+                intervals[idx].count++;
+                intervals[idx].items.push(`第${item.id}題`);
+                intervals[idx].totalCorrect += item.correct;
+            });
+
+            // 渲染組距表格
+            const tbody = document.getElementById('interval-table-body');
+            tbody.innerHTML = '';
+            intervals.forEach(bin => {
+                const avgCorrect = bin.count > 0 ? Math.round(bin.totalCorrect / bin.count) : 0;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900 border-b border-slate-800";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-slate-300">${bin.label}</td>
+                    <td class="p-3 text-center"><span class="bg-indigo-950 text-indigo-300 font-extrabold px-2.5 py-0.5 rounded-full border border-indigo-800">${bin.count}</span></td>
+                    <td class="p-3 text-slate-400 text-xs">${bin.items.join(', ') || '-'}</td>
+                    <td class="p-3 text-right font-mono font-medium text-emerald-400">${bin.count > 0 ? avgCorrect.toLocaleString() + ' 人' : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 繪製直方圖
+            const ctx = document.getElementById('intervalChart').getContext('2d');
+            if (intervalChart) {
+                intervalChart.destroy();
+            }
+
+            intervalChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: intervals.map(b => b.label),
+                    datasets: [{
+                        label: '題目數量 (題)',
+                        data: intervals.map(b => b.count),
+                        backgroundColor: 'rgba(236, 72, 153, 0.75)',
+                        borderColor: '#ec4899',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { stepSize: 1, color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // 單題深度診斷系統更新
+        function updateDiagnostic(itemId) {
+            const item = examData.find(d => d.id == itemId);
+            if (!item) return;
+
+            // 填充文字與數據
+            document.getElementById('diag-title').innerText = `第 ${item.id} 題 · 深度概念分析`;
+            document.getElementById('diag-ans-badge').innerText = `正確答案：選項 ${item.ans}`;
+            document.getElementById('diag-stem').innerText = item.stem;
+            document.getElementById('diag-correct').innerText = `${item.correct.toLocaleString()} 人`;
+            document.getElementById('diag-incorrect').innerText = `${item.incorrect.toLocaleString()} 人`;
+            document.getElementById('diag-p').innerText = item.diff;
+            document.getElementById('diag-d').innerText = item.disc;
+            document.getElementById('diag-reason').innerText = item.reason;
+            document.getElementById('diag-focus').innerText = item.focus;
+            document.getElementById('diag-suggest').innerText = item.suggest;
+
+            // 繪製該題 PHL 誘答率對比柱狀圖
+            const ctx = document.getElementById('phlChart').getContext('2d');
+            if (phlChart) {
+                phlChart.destroy();
+            }
+
+            const pData = item.phl.map(opt => (opt[0] * 100).toFixed(2));
+            const hData = item.phl.map(opt => (opt[1] * 100).toFixed(2));
+            const lData = item.phl.map(opt => (opt[2] * 100).toFixed(2));
+
+            phlChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['選項 ①', '選項 ②', '選項 ③', '選項 ④'],
+                    datasets: [
+                        {
+                            label: '全體選取率 (P) %',
+                            data: pData,
+                            backgroundColor: 'rgba(148, 163, 184, 0.45)',
+                            borderColor: '#94a3b8',
+                            borderWidth: 1.5,
+                            borderRadius: 4
+                        },
+                        {
+                            label: '高分群選取率 (H) %',
+                            data: hData,
+                            backgroundColor: 'rgba(99, 102, 241, 0.85)',
+                            borderColor: '#6366f1',
+                            borderWidth: 1.5,
+                            borderRadius: 4
+                        },
+                        {
+                            label: '低分群選取率 (L) %',
+                            data: lData,
+                            backgroundColor: 'rgba(244, 63, 94, 0.85)',
+                            borderColor: '#f43f5e',
+                            borderWidth: 1.5,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 11, weight: 'bold' } } },
+                        tooltip: { callbacks: { label: (context) => ` ${context.dataset.label.split(' ')[0]}: ${context.raw}%` } }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { beginAtZero: true, max: 100, grid: { color: '#1e293b' }, ticks: { callback: (v) => v + '%', color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            calculateDescriptiveStats();
+            loadDataTable();
+            calculateAndRenderIntervals();
+
+            const metricSelect = document.getElementById('metric-select');
+            renderTrendChart(metricSelect.value);
+            metricSelect.addEventListener('change', (e) => {
+                renderTrendChart(e.target.value);
+            });
+
+            const itemSelect = document.getElementById('item-select');
+            examData.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.innerText = `第 ${item.id} 題 (通過率: ${item.passRate}%)`;
+                itemSelect.appendChild(opt);
+            });
+
+            // 預設跳轉至第七題
+            itemSelect.value = 7;
+            updateDiagnostic(7);
+            itemSelect.addEventListener('change', (e) => {
+                updateDiagnostic(e.target.value);
+            });
+
+            // 綁定 SortableJS
+            const container = document.getElementById('drag-container');
+            new Sortable(container, {
+                handle: '.drag-handle',
+                animation: 250,
+                ghostClass: 'ghost-card',
+                dragClass: 'opacity-50'
+            });
+        });
+    </script>
+</body>
+</html>
